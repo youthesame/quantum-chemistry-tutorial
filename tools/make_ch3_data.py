@@ -60,7 +60,7 @@ def dimer_energy(geom, xc):
     return mf.kernel()
 
 
-# 2つのメタンは、水素3個の面どうしを向かい合わせる
+# 2つのメタンは、水素3個の面同士を向かい合わせる
 dists = [3.2, 3.4, 3.6, 3.8, 4.0, 4.4, 5.0, 6.0]
 curves = {}
 for xc in ["b3lyp", "wb97x_v"]:

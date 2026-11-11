@@ -37,7 +37,7 @@
       <svg id="mo-diagram" viewBox="0 0 420 260" width="100%"></svg>
     </div>
   </div>
-  <div class="card">計算機は、エネルギーが最も低くなる係数を探します。これがSCF計算です。</div>
+  <div class="card">計算機は、エネルギーが最も低くなる係数を探します。エネルギーが低いほど本当の答えに近いという性質を、変分原理と呼びます。</div>
   <div class="tradeoff">
     <div><b aria-label="扱う"></b>原子軌道を足し合わせてできる形なら、分子軌道として表せる</div>
     <div><b aria-label="扱わない"></b>用意した関数をどう足しても作れない形は、表せない</div>
@@ -59,7 +59,7 @@
       <div class="card" style="font-size:18px">ガウス関数 <span id="g-n"></span> 個、本物との一致度 <span id="g-ov" style="font-size:26px;font-weight:700"></span></div>
     </div>
   </div>
-  <div class="card">左の図で、本物の山は原子核の真上で鋭く尖っています。この尖りだけは、ガウス関数を何個足しても再現できません。それでもガウス関数を使うのは、積分がとても速く計算できるからです。</div>
+  <div class="card">左の図で、本物の山は原子核の真上で鋭く尖っています。この尖りだけは、ガウス関数を何個足しても再現できません。それでもガウス関数を使うのは、積分がとても速く計算できるからです。いくつかのガウス関数を決まった比率で足し、1つの基底関数として使うことを縮約と呼びます。</div>
   <div class="tradeoff">
     <div><b aria-label="扱う"></b>原子核から少し離れた所の、軌道の大まかな形は再現できる</div>
     <div><b aria-label="扱わない"></b>原子核の真上で軌道が鋭く尖る形は、ガウス関数を何個足しても再現できない</div>
@@ -103,12 +103,12 @@
   <p class="hint">エチレンで比較。原子価軌道1つあたりの関数は SVP が2つ、TZVP が3つ、QZVP が4つ。</p>
   <div class="grid3" id="ladder"></div>
   <div class="bars" id="time-bars" style="margin-top:24px"></div>
-  <div class="card">基底関数の数が2倍になると、時間はおよそ16倍になります。ただ、2つの分子を同じ基底関数で計算すると誤差もほぼ同じだけ入るので、エネルギーの差をとると誤差はほぼ打ち消し合います。</div>
+  <div class="card">計算時間は、基底関数の数のおよそ4乗で増えます。数が2倍になると、時間はおよそ16倍です。ただ、2つの分子を同じ基底関数で計算すると誤差もほぼ同じだけ入るので、エネルギーの差をとると誤差はほぼ打ち消し合います。</div>
 </section>
 
 <section>
   <div class="kicker">まとめ</div>
-  <h2>迷ったら、こう選ぶ</h2>
+  <h2>まず使う基底関数</h2>
   <div class="grid3">
     <div class="stat"><div class="name">構造最適化</div><p>def2-SVP</p></div>
     <div class="stat"><div class="name">エネルギーの比較</div><p>SVP の構造で、def2-TZVP で計算し直す</p></div>

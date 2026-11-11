@@ -38,7 +38,7 @@
 <section>
   <div class="kicker">第3章</div>
   <h1>汎関数：電子相関を、電子密度から見積もる</h1>
-  <p class="lead">軌道近似では、電子どうしが瞬間ごとに避け合う動き、電子相関を捨てていました。密度汎関数理論、DFT は、この効果を電子密度から見積もって足し戻します。その見積もりの式が汎関数で、<code>xc = "b3lyp"</code> で指定します。</p>
+  <p class="lead">軌道近似では、電子同士が瞬間ごとに避け合う動き、電子相関を捨てていました。密度汎関数理論、DFT は、この効果を電子密度から見積もって足し戻します。その見積もりの式を交換相関汎関数と呼び、<code>xc = "b3lyp"</code> の xc はその略です。</p>
   <nav class="map" id="map"></nav>
 </section>
 
@@ -71,7 +71,7 @@
   </div>
   <div class="ladder" id="ladder"></div>
   <p class="hint">2段目から5段目は、分散力の補正 D3 を足した値。出典：Martin, Santra, Isr. J. Chem. 60 (2020), doi:10.1002/ijch.201900114 の表1。HF は Semidalas, Martin, J. Chem. Theory Comput. 16, 4238 (2020) 表1。</p>
-  <div class="card">はしごを1段上るごとに、平均の誤差は小さくなります。B3LYP は4段目の混成汎関数で、計算の重さと正確さの釣り合いがよいので、広く使われてきました。</div>
+  <div class="card">はしごを1段上るごとに、平均の誤差は小さくなります。B3LYP は4段目の混成汎関数で、計算の重さと正確さの釣り合いがよいので、長く広く使われてきました。最近は、電子同士が遠く離れたときの扱いを改めた長距離補正と、分散力を組み込んだ ωB97X-V や ωB97M-V も使われています。</div>
   <div class="tradeoff">
     <div><b aria-label="扱う"></b>電子相関の効果を、電子密度から見積もって足し戻す</div>
     <div><b aria-label="扱わない"></b>電子相関を正確に表す汎関数の式は、まだ分かっていない</div>
@@ -81,7 +81,7 @@
 
 <section>
   <div class="kicker">3　分散力</div>
-  <h2>B3LYP は、分子どうしが弱く引き合う力を取りこぼす</h2>
+  <h2>B3LYP は、分子同士が弱く引き合う力を取りこぼす</h2>
   <div class="row">
     <div>
       <div class="viewer" id="v-dimer"><span class="tag">メタン2分子</span><span class="big" id="dimer-r"></span></div>
@@ -93,15 +93,15 @@
       <svg id="dimer-curve" viewBox="0 0 420 260" width="100%" style="margin-top:20px"></svg>
     </div>
   </div>
-  <div class="card">分子どうしの間には、電子のゆらぎから生まれる弱い引力、分散力が働きます。B3LYP は分散力を含まないので、メタンどうしが引き合いません。分散力を含む ωB97X-V では、3.8 Å あたりで最も強く引き合います。研究では、B3LYP に D3 という分散力の補正を足した B3LYP-D3 を使うのが普通です。</div>
+  <div class="card">分子同士の間には、電子のゆらぎから生まれる弱い引力、分散力が働きます。B3LYP は分散力を含まないので、メタン同士が引き合いません。分散力を含む ωB97X-V では、3.8 Å あたりで最も強く引き合います。B3LYP を使うときは、D3 という分散力の補正を足した B3LYP-D3 にします。</div>
 </section>
 
 <section>
   <div class="kicker">まとめ</div>
-  <h2>迷ったら、こう選ぶ</h2>
+  <h2>まず使う汎関数</h2>
   <div class="grid3">
-    <div class="stat"><div class="name">有機分子の構造とエネルギー</div><p>B3LYP-D3 から始める</p></div>
-    <div class="stat"><div class="name">結果を確かめる</div><p>ωB97X-D や PBE0-D3 でも計算して、結論が変わらないかを見る</p></div>
+    <div class="stat"><div class="name">構造最適化</div><p>B3LYP-D3</p></div>
+    <div class="stat"><div class="name">エネルギーの比較</div><p>その構造で、ωB97M-V や ωB97X-V で計算し直す</p></div>
     <div class="stat"><div class="name">論文に書くこと</div><p>汎関数と分散力補正の名前</p></div>
   </div>
 </section>
@@ -162,13 +162,13 @@ const D = window.CH3;
     <path d="${path(d.b3lyp)}" fill="none" stroke="#9a9994" stroke-width="2"/>
     <path d="${path(d.wb97xv)}" fill="none" stroke="${POS}" stroke-width="2"/>
     <text x="0" y="16" font-size="13" fill="#5f5e5a">エネルギー ↑</text>
-    <text x="400" y="255" font-size="13" fill="#5f5e5a" text-anchor="end">炭素どうしの距離 →</text>`;
+    <text x="400" y="255" font-size="13" fill="#5f5e5a" text-anchor="end">炭素同士の距離 →</text>`;
   let first = true;
   function update() {
     const k = +slider.value, g = d.geoms[k];
     v.removeAllModels();
     v.addModel(`${g.length}\n\n` + g.map(([el, p]) => `${el} ${p.join(" ")}`).join("\n"), "xyz");
-    // 原子をファンデルワールス半径の球で描き、近づくと球どうしがぶつかる様子を見せる
+    // 原子をファンデルワールス半径の球で描き、近づくと球同士がぶつかる様子を見せる
     v.setStyle({}, { sphere: { scale: 1.0 } });
     if (first) { v.zoomTo(); v.rotate(90, "x"); v.rotate(90, "z"); v.zoom(0.8); first = false; }
     v.render();
