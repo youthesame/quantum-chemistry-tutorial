@@ -1,0 +1,231 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第1章 量子化学計算</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=8">
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2/build/3Dmol-min.js"></script>
+<script src="common.js?v=5"></script>
+<script src="ch1_data.js?v=2"></script>
+<style>
+  .scf-steps { list-style: none; counter-reset: st; margin: 0; padding: 0; display: grid; gap: 8px; }
+  .scf-steps li { counter-increment: st; position: relative; background: var(--soft); border-radius: 12px; padding: 12px 16px 12px 52px;
+                  font-size: 14px; color: var(--ink2); line-height: 1.6; transition: background .2s, color .2s; }
+  .scf-steps li::before { content: counter(st); position: absolute; left: 16px; top: 12px; width: 24px; height: 24px; border-radius: 50%;
+                          background: var(--bg); color: var(--ink); font-weight: 700; text-align: center; line-height: 24px; font-size: 13px; }
+  .scf-steps li b { display: block; color: var(--ink); font-size: 16px; }
+  .scf-steps li em { display: block; font-style: normal; font-weight: 700; color: var(--pos); }
+  .scf-steps li.on { background: #fff; box-shadow: inset 0 0 0 2px var(--accent); }
+  .scf-steps li.on::before { background: var(--accent); color: #fff; }
+  .scf-steps li:nth-child(4)::after { content: "↺ 2 へ"; position: absolute; right: 14px; top: 12px; font-size: 12px; color: var(--ink2); }
+</style>
+</head>
+<body>
+
+<section>
+  <div class="kicker">第1章</div>
+  <h1>量子化学計算：電子の分布を、近似して求める</h1>
+  <p class="lead">分子の形や反応のしやすさは、電子がどこにどれだけいるかで決まります。量子化学計算は、シュレディンガー方程式を近似して解き、電子の分布とエネルギーを求めます。</p>
+  <nav class="map" id="map"></nav>
+</section>
+
+<section>
+  <div class="kicker">1　シュレディンガー方程式</div>
+  <h2>水素原子なら、方程式を厳密に解ける</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-hyd"><span class="tag">水素原子の軌道</span><span class="big" id="hyd-e"></span></div>
+    </div>
+    <div>
+      <div class="eq">Ĥψ = Eψ</div>
+      <p>ψ は波動関数、E はエネルギーです。水素原子について解くと、化学の授業で習った軌道の形が出てきます。左の図が ψ の形で、橙は ψ が正、青は負の領域です。右下の数字は、その軌道の電子のエネルギー E です。</p>
+      <div class="seg" id="seg-hyd"></div>
+    </div>
+  </div>
+  <div class="card">電子が2個以上になると、電子どうしが反発し合い、互いの動きが絡み合います。そのため厳密には解けず、近似を重ねて解きます。</div>
+</section>
+
+<section>
+  <div class="kicker">2　Born–Oppenheimer近似</div>
+  <h2>原子核を止めて、核の位置ごとに電子だけを解く</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-scan"><span class="tag">H₂ の結合性軌道</span><span class="big" id="scan-r"></span></div>
+    </div>
+    <div>
+      <p>原子核の間の距離を変えてみましょう。</p>
+      <input type="range" id="s-scan" min="0" step="1">
+      <div class="slider-labels"><span>近い</span><span>遠い</span></div>
+      <svg id="pes" viewBox="0 0 420 250" width="100%" style="margin-top:20px"></svg>
+    </div>
+  </div>
+  <div class="card">原子核は電子より約1800倍重く、ゆっくり動きます。そこで原子核を止めたとみなし、核の位置ごとに電子のエネルギーを求めます。この曲線の一番低い点が、安定な構造です。</div>
+  <div class="tradeoff">
+    <div><b aria-label="扱う"></b>原子核の位置を決めれば、そこでの電子の状態を求められる</div>
+    <div><b aria-label="扱わない"></b>原子核が動くと電子もつられて変わる、という連動は無視する</div>
+    <div><b aria-label="影響"></b>ふつうの分子では問題にならない。光で励起された分子の反応のように、電子の状態が入れ替わる場面では使えないことがある</div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">3　軌道近似と SCF</div>
+  <h2>電子を1個ずつ、ほかの電子の平均の中で扱う</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-occ"><span class="tag">水の分子軌道</span></div>
+    </div>
+    <div>
+      <p>水の電子10個は、5つの分子軌道に2個ずつ入ります。準位をクリックすると、その軌道の形が見えます。</p>
+      <svg id="levels" viewBox="0 0 360 290" width="100%"></svg>
+    </div>
+  </div>
+  <p style="margin-top:56px">各軌道の形は、ほかの電子がつくる平均の反発で決まります。ところが、その反発もまた軌道の形で決まります。そこで、仮の軌道から始めて、次の 2〜4 を変化がなくなるまで繰り返します。この繰り返しを SCF 計算と呼びます。</p>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-scf"><span class="tag">水の HOMO</span></div>
+      <button class="play" id="play" style="margin-top:16px">SCF を再生</button>
+      <input type="range" id="s-scf" min="0" step="1" value="0">
+      <div class="readout"><span id="scf-cycle"></span><b id="scf-e"></b></div>
+    </div>
+    <ol class="scf-steps" id="scf-steps">
+      <li><b>仮の軌道を置く</b>電子どうしの反発を無視して解いた軌道から始める</li>
+      <li><b>平均の反発を計算する</b>今の軌道から電子の分布を求め、それがつくる反発を計算する</li>
+      <li><b>軌道を解き直す</b>その反発の中で、電子1個の方程式を解く。左の HOMO が新しい形になる</li>
+      <li><b>前回と比べる</b><span id="scf-de">エネルギーの変化を調べる</span><em id="scf-next"></em></li>
+    </ol>
+  </div>
+  <div class="tradeoff">
+    <div><b aria-label="扱う"></b>1個の電子は、ほかの電子からの反発を平均として受ける</div>
+    <div><b aria-label="扱わない"></b>電子どうしがその瞬間ごとに避け合う動きは無視する。この動きを電子相関と呼ぶ</div>
+    <div><b aria-label="影響"></b>結合エネルギーなどがずれる。第3章の汎関数で補う</div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">まとめ</div>
+  <h2>原子核を止め、電子を1個ずつ扱って解く</h2>
+  <p>この章では、原子核を止める近似と、電子を1個ずつ扱う近似を入れました。この上で、入力で選ぶ汎関数と基底関数を、第2章と第3章で見ていきます。</p>
+</section>
+
+<nav class="pager">
+  <span></span>
+  <a class="home" href="index.html">目次</a>
+  <a class="next" href="ch2_basis.html"><small>次の章 →</small>第2章 基底関数</a>
+</nav>
+<script>
+drawMap("map", "ch1_intro.html");
+const D = window.CH1, HARTREE_KCAL = 627.51;
+
+// 場面1：水素原子の軌道。E = −13.6 / n² eV
+(() => {
+  const v = makeViewer("v-hyd"), seg = document.getElementById("seg-hyd");
+  const n = { "1s": 1, "2p": 2, "3d": 3 }, zoom = { "1s": 2.2, "2p": 1.3, "3d": 1 };
+  function show(name) {
+    const d = D.hydrogen[name], vals = decode(d.grids[0]);
+    const iso = 0.1 * Math.max(...vals.map(Math.abs));
+    drawOrbital(v, d, vals, iso, true, { view: v => { v.rotate(70, "x"); v.rotate(25, "y"); }, opacity: 0.6, zoom: zoom[name] });
+    document.getElementById("hyd-e").textContent = "E = " + (-13.6 / n[name] ** 2).toFixed(1) + " eV";
+    seg.querySelectorAll("button").forEach(b => b.classList.toggle("on", b.textContent === name));
+  }
+  seg.innerHTML = Object.keys(n).map(k => `<button>${k}</button>`).join("");
+  seg.querySelectorAll("button").forEach(b => b.onclick = () => show(b.textContent));
+  show("1s");
+})();
+
+// 場面2：H2 の結合距離ごとのエネルギー
+(() => {
+  const S = D.h2scan, v = makeViewer("v-scan"), svg = document.getElementById("pes");
+  const E = S.map(s => s.energy), emin = Math.min(...E), emax = Math.max(...E);
+  const r0 = S[0].r, r1 = S[S.length - 1].r, x = r => 50 + (r - r0) / (r1 - r0) * 340, y = e => 30 + (e - emax) / (emin - emax) * 170;
+  const path = S.map((s, i) => `${i ? "L" : "M"}${x(s.r)},${y(s.energy)}`).join("");
+  const imin = E.indexOf(emin);
+  const base = `<path d="${path}" fill="none" stroke="#c9c6be" stroke-width="2"/>
+    <text x="0" y="16" font-size="13" fill="#5f5e5a">エネルギー ↑</text>
+    <text x="400" y="245" font-size="13" fill="#5f5e5a" text-anchor="end">原子核の間の距離 →</text>
+    <line x1="${x(S[imin].r)}" x2="${x(S[imin].r)}" y1="${y(emin) + 10}" y2="222" stroke="#c9c6be" stroke-dasharray="3 3"/>
+    <text x="${x(S[imin].r)}" y="236" font-size="12" fill="#5f5e5a" text-anchor="middle">安定な距離</text>`;
+  let first = true;
+  function update() {
+    const s = S[+document.getElementById("s-scan").value];
+    drawOrbital(v, s, decode(s.grids[0]), 0.1, first, { rotate: [90, "y"], zoom: 1.7, moveAtoms: true });
+    first = false;
+    document.getElementById("scan-r").textContent = s.r.toFixed(2) + " Å";
+    const de = (s.energy - emin) * HARTREE_KCAL;
+    svg.innerHTML = base + `<circle cx="${x(s.r)}" cy="${y(s.energy)}" r="8" fill="${NEG}" stroke="#fbfaf7" stroke-width="3"/>
+      <text x="${x(s.r)}" y="${y(s.energy) - 16}" font-size="14" font-weight="700" fill="${NEG}" text-anchor="middle">${de < 0.05 ? "最も低い" : "+" + de.toFixed(0) + " kcal/mol"}</text>`;
+  }
+  // 最も長い結合で視点を決めてから、平衡距離を表示する
+  document.getElementById("s-scan").max = S.length - 1;
+  document.getElementById("s-scan").value = S.length - 1; update();
+  document.getElementById("s-scan").value = imin; update();
+  onInput(document.getElementById("s-scan"), update);
+})();
+
+// 場面3a：水の占有軌道と準位図
+(() => {
+  const d = D.occupied, v = makeViewer("v-occ"), svg = document.getElementById("levels");
+  const E = d.energies, top = E[4], y = e => 30 + (top - e) / (top - E[2]) * 120;
+  const ys = [270, 205, ...E.slice(2).map(y)];
+  const names = ["酸素の 1s", "", "", "", "HOMO"];
+  let first = true, sel = 4;
+  function draw() {
+    svg.innerHTML = `<text x="0" y="14" font-size="13" fill="#5f5e5a">エネルギー ↑</text>
+      <text x="150" y="182" font-size="16" fill="#5f5e5a" text-anchor="middle">≈</text><text x="150" y="243" font-size="16" fill="#5f5e5a" text-anchor="middle">≈</text>` +
+      E.map((e, i) => `<g data-i="${i}" style="cursor:pointer">
+        <rect x="40" y="${ys[i] - 14}" width="300" height="28" fill="transparent"/>
+        <line x1="80" x2="220" y1="${ys[i]}" y2="${ys[i]}" stroke="${i === sel ? NEG : "#17171a"}" stroke-width="${i === sel ? 5 : 3}"/>
+        <text x="150" y="${ys[i] - 6}" font-size="13" text-anchor="middle" fill="${i === sel ? NEG : "#17171a"}">↑↓</text>
+        <text x="232" y="${ys[i] + 5}" font-size="13" fill="#5f5e5a">${e.toFixed(1)} eV</text>
+        <text x="72" y="${ys[i] + 5}" font-size="13" fill="#5f5e5a" text-anchor="end">${names[i]}</text></g>`).join("");
+    svg.querySelectorAll("g").forEach(g => g.onclick = () => { sel = +g.dataset.i; draw(); });
+    drawOrbital(v, d, decode(d.grids[sel]), 0.07, first, { view: v => { WATER_VIEW(v); v.rotate(-40, "y"); v.rotate(15, "x"); }, zoom: 1.6 });
+    first = false;
+  }
+  draw();
+})();
+
+// 場面3b：SCF の手順を1つずつ光らせながら、反復ごとの HOMO とエネルギーを見せる
+(() => {
+  const d = D.scf, v = makeViewer("v-scf"), slider = document.getElementById("s-scf"), N = d.steps.length;
+  const items = [...document.querySelectorAll("#scf-steps li")], grids = d.grids.map(decode);
+  slider.max = N - 1;
+  let first = true, timer = 0;
+  const light = i => items.forEach((li, j) => li.classList.toggle("on", j === i));
+  function show(k) {
+    const s = d.steps[k];
+    drawOrbital(v, d, grids[k], 0.07, first, { view: v => { WATER_VIEW(v); v.rotate(-40, "y"); v.rotate(15, "x"); }, zoom: 1.6 });
+    first = false;
+    slider.value = k;
+    document.getElementById("scf-cycle").textContent = `反復 ${s.cycle} 回目のエネルギー`;
+    document.getElementById("scf-e").textContent = s.energy.toFixed(6) + " Hartree";
+  }
+  function compare(k) {
+    const de = k ? Math.abs(d.steps[k].energy - d.steps[k - 1].energy) : null, done = k === N - 1;
+    document.getElementById("scf-de").textContent = de === null ? "前回の値がまだない"
+      : `前回との差 ${de < 1e-3 ? de.toExponential(1) : de.toFixed(3)} Hartree`;
+    document.getElementById("scf-next").textContent = done ? "変化がなくなったので終わる" : "まだ変わるので 2 に戻る";
+    light(3);
+  }
+  onInput(slider, () => { clearTimeout(timer); show(+slider.value); compare(+slider.value); });
+  document.getElementById("play").onclick = () => {
+    clearTimeout(timer);
+    // 1 → (2 → 3 → 4) を反復の回数だけ繰り返す
+    const seq = [[0, null]];
+    for (let k = 0; k < N; k++) seq.push([1, k], [2, k], [3, k]);
+    let i = 0;
+    (function tick() {
+      const [step, k] = seq[i];
+      light(step);
+      if (step === 2) show(k);
+      if (step === 3) compare(k);
+      if (++i < seq.length) timer = setTimeout(tick, step === 3 ? 700 : 350);
+    })();
+  };
+  show(0); light(0);
+})();
+</script>
+</body>
+</html>

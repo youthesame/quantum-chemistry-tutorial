@@ -1,0 +1,17 @@
+[project]
+name = "b3-qchem-tutorial"
+version = "0.1.0"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "pyscf",
+  "geometric",
+  "numpy",
+  "scipy",
+  "plotly",
+  "jupytext",
+  "nbconvert",
+  "ipykernel",
+  "py3dmol>=2.5.5",
+]
+[tool.uv]
+package = false

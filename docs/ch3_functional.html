@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第3章 汎関数</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=8">
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2/build/3Dmol-min.js"></script>
+<script src="common.js?v=5"></script>
+<script src="ch3_data.js?v=2"></script>
+<style>
+  .heaven { margin-top: 32px; border: 2px dashed var(--accent); border-radius: 14px; color: var(--accent); }
+  .heaven .rung small, .heaven .info { color: var(--accent); }
+  .heaven .zero { border-left: 3px solid var(--accent); padding-left: 6px; font-weight: 700; font-size: 14px; }
+  .ladder { margin-top: 16px; border-left: 3px solid var(--ink); border-right: 3px solid var(--ink); padding: 0 0 0 0; }
+  .lrow { display: grid; grid-template-columns: 150px 190px 1fr; gap: 20px; align-items: center; padding: 14px 20px; border-top: 3px solid var(--ink); }
+  .lrow.head { border-top: 0; padding-top: 0; padding-bottom: 6px; font-size: 13px; color: var(--ink2); }
+  .lrow.ground { border-top: 3px solid var(--ink); background: var(--soft); }
+  .rung small { display: block; font-size: 12px; color: var(--ink2); }
+  .rung b { font-size: 18px; }
+  .info { font-size: 15px; color: var(--ink2); }
+  .lb { display: grid; grid-template-columns: 70px 1fr 44px; gap: 12px; align-items: center; margin: 4px 0; font-size: 14px; font-variant-numeric: tabular-nums; }
+  .lb .track { position: relative; height: 10px; border-radius: 5px; background: var(--soft); }
+  .lrow.ground .lb .track { background: #e2dfd7; }
+  .lb .fill { height: 100%; border-radius: 5px; background: var(--neg); }
+    .lb b { text-align: right; }
+  @media (max-width: 860px) {
+    .lrow { grid-template-columns: 1fr; gap: 4px; padding: 12px 14px; }
+    .lrow.head span:empty { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<section>
+  <div class="kicker">第3章</div>
+  <h1>汎関数：電子相関を、電子密度から見積もる</h1>
+  <p class="lead">軌道近似では、電子どうしが瞬間ごとに避け合う動き、電子相関を捨てていました。密度汎関数理論、DFT は、この効果を電子密度から見積もって足し戻します。その見積もりの式が汎関数で、<code>xc = "b3lyp"</code> で指定します。</p>
+  <nav class="map" id="map"></nav>
+</section>
+
+<section>
+  <div class="kicker">1　電子密度</div>
+  <h2>DFT の主役は、波動関数ではなく電子密度</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-rho"><span class="tag">水の電子密度</span></div>
+    </div>
+    <div>
+      <p>電子密度は、空間の各点にどれだけ電子がいるかを表します。面を描く値を変えてみましょう。</p>
+      <input type="range" id="s-rho" min="0" max="5" step="1" value="2">
+      <div class="slider-labels"><span>濃い所だけ</span><span>薄い所まで</span></div>
+      <div class="readout">この面の内側にいる電子<b id="rho-n"></b></div>
+    </div>
+  </div>
+  <div class="card">波動関数は、電子が1個増えるごとに変数が3つずつ増えます。電子密度は、電子が何個あっても3次元の関数のままです。そのため、大きな分子でも計算できます。</div>
+</section>
+
+<section>
+  <div class="kicker">2　ヤコブのはしご</div>
+  <h2>汎関数は、使う情報の多さで5段のはしごに並ぶ</h2>
+  <p>Perdew は汎関数を、電子密度からどれだけの情報を使うかで5段に並べ、天まで届くヤコブのはしごになぞらえました。上の段ほど多くの情報を使い、計算は重くなるかわりに、誤差が小さくなります。</p>
+  <p>右の棒は、反応エネルギーや分子間の相互作用など55種類の問題を集めた問題集、GMTKN55 での平均の誤差で、単位は kcal/mol です。短いほど正確です。</p>
+  <div class="heaven lrow">
+    <div class="rung"><small>はしごの外</small><b>CCSD(T)</b></div>
+    <div class="info">誤差を測る基準</div>
+    <div class="lb"><span></span><div class="zero">0</div><b></b></div>
+  </div>
+  <div class="ladder" id="ladder"></div>
+  <p class="hint">2段目から5段目は、分散力の補正 D3 を足した値。出典：Martin, Santra, Isr. J. Chem. 60 (2020), doi:10.1002/ijch.201900114 の表1。HF は Semidalas, Martin, J. Chem. Theory Comput. 16, 4238 (2020) 表1。</p>
+  <div class="card">はしごを1段上るごとに、平均の誤差は小さくなります。B3LYP は4段目の混成汎関数で、計算の重さと正確さの釣り合いがよいので、広く使われてきました。</div>
+  <div class="tradeoff">
+    <div><b aria-label="扱う"></b>電子相関の効果を、電子密度から見積もって足し戻す</div>
+    <div><b aria-label="扱わない"></b>電子相関を正確に表す汎関数の式は、まだ分かっていない</div>
+    <div><b aria-label="影響"></b>汎関数ごとに得意な分子と苦手な分子があり、結果が変わる</div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">3　分散力</div>
+  <h2>B3LYP は、分子どうしが弱く引き合う力を取りこぼす</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-dimer"><span class="tag">メタン2分子</span><span class="big" id="dimer-r"></span></div>
+    </div>
+    <div>
+      <p>2つのメタンの距離を変えてみましょう。</p>
+      <input type="range" id="s-dimer" min="0" max="7" step="1" value="2">
+      <div class="slider-labels"><span>近い</span><span>遠い</span></div>
+      <svg id="dimer-curve" viewBox="0 0 420 260" width="100%" style="margin-top:20px"></svg>
+    </div>
+  </div>
+  <div class="card">分子どうしの間には、電子のゆらぎから生まれる弱い引力、分散力が働きます。B3LYP は分散力を含まないので、メタンどうしが引き合いません。分散力を含む ωB97X-V では、3.8 Å あたりで最も強く引き合います。研究では、B3LYP に D3 という分散力の補正を足した B3LYP-D3 を使うのが普通です。</div>
+</section>
+
+<section>
+  <div class="kicker">まとめ</div>
+  <h2>迷ったら、こう選ぶ</h2>
+  <div class="grid3">
+    <div class="stat"><div class="name">有機分子の構造とエネルギー</div><p>B3LYP-D3 から始める</p></div>
+    <div class="stat"><div class="name">結果を確かめる</div><p>ωB97X-D や PBE0-D3 でも計算して、結論が変わらないかを見る</p></div>
+    <div class="stat"><div class="name">論文に書くこと</div><p>汎関数と分散力補正の名前</p></div>
+  </div>
+</section>
+
+<nav class="pager">
+  <a class="prev" href="ch2_basis.html"><small>← 前の章</small>第2章 基底関数</a>
+  <a class="home" href="index.html">目次</a>
+  <a class="next" href="ch4_optimization.html"><small>次の章 →</small>第4章 構造最適化と振動</a>
+</nav>
+<script>
+drawMap("map", "ch3_functional.html");
+const D = window.CH3;
+
+// 場面1：電子密度の等値面と、その内側の電子の数
+(() => {
+  const d = D.density, rho = decode(d.grids[0]), v = makeViewer("v-rho"), slider = document.getElementById("s-rho");
+  const text = cube(d, rho), vol = new $3Dmol.VolumeData(text, "cube");
+  v.addModel(text, "cube");
+  v.setStyle({}, { stick: { radius: 0.12, color: "#9a9994" }, sphere: { scale: 0.22 } });
+  v.zoomTo(); WATER_VIEW(v); v.zoom(1.7);
+  function update() {
+    const k = +slider.value;
+    v.removeAllShapes();
+    v.addIsosurface(vol, { isoval: d.levels[k], color: NEG, opacity: 0.45 });
+    v.render();
+    document.getElementById("rho-n").textContent = `${d.inside[k].toFixed(1)} 個 / 10 個`;
+  }
+  onInput(slider, update);
+  update();
+})();
+
+// 場面2：ヤコブのはしご。上の段から順に並べ、各段の代表的な汎関数の GMTKN55 での平均の誤差 WTMAD-2 を棒で示す
+(() => {
+  const max = 30;
+  const rungs = [
+    ["5段目", "二重混成", "+ 空の軌道", [["B2PLYP", 3.90]]],
+    ["4段目", "混成", "+ HF の交換", [["B3LYP", 6.50], ["PBE0", 6.55]]],
+    ["3段目", "メタGGA", "+ 運動エネルギー密度", [["SCAN", 7.95]]],
+    ["2段目", "GGA", "+ 密度の傾き", [["PBE", 10.44]]],
+    ["1段目", "LDA", "電子密度だけ", [["LDA", 22.67]]],
+    ["地面", "HF", "電子相関なし", [["HF", 29.46]]]];
+  const bar = ([name, v]) => `<div class="lb"><span>${name}</span><div class="track"><div class="fill" style="width:${v / max * 100}%"></div></div><b>${v.toFixed(1)}</b></div>`;
+  document.getElementById("ladder").innerHTML = rungs.map(([no, name, info, fs], i) => `<div class="lrow ${i === rungs.length - 1 ? "ground" : ""}">
+      <div class="rung"><small>${no}</small><b>${name}</b></div>
+      <div class="info">${info}</div>
+      <div>${fs.map(bar).join("")}</div></div>`).join("");
+})();
+
+// 場面3：メタン二量体の距離とエネルギー
+(() => {
+  const d = D.dimer, v = makeViewer("v-dimer"), svg = document.getElementById("dimer-curve"), slider = document.getElementById("s-dimer");
+  // 近い所の反発は大きいので、+1 kcal/mol より上は切って、引き合う谷を大きく見せる
+  const lo = -0.6, hi = 1.0;
+  const x = r => 50 + (r - 3.2) / 2.8 * 330, y = e => 30 + (hi - Math.min(e, hi)) / (hi - lo) * 190;
+  const path = c => d.dists.map((r, i) => `${i ? "L" : "M"}${x(r)},${y(c[i])}`).join("");
+  const base = `<line x1="40" x2="400" y1="${y(0)}" y2="${y(0)}" stroke="#e2dfd7"/>
+    <text x="400" y="${y(0) + 16}" font-size="12" fill="#5f5e5a" text-anchor="end">0：十分に離れた2分子</text>
+    <path d="${path(d.b3lyp)}" fill="none" stroke="#9a9994" stroke-width="2"/>
+    <path d="${path(d.wb97xv)}" fill="none" stroke="${POS}" stroke-width="2"/>
+    <text x="0" y="16" font-size="13" fill="#5f5e5a">エネルギー ↑</text>
+    <text x="400" y="255" font-size="13" fill="#5f5e5a" text-anchor="end">炭素どうしの距離 →</text>`;
+  let first = true;
+  function update() {
+    const k = +slider.value, g = d.geoms[k];
+    v.removeAllModels();
+    v.addModel(`${g.length}\n\n` + g.map(([el, p]) => `${el} ${p.join(" ")}`).join("\n"), "xyz");
+    // 原子をファンデルワールス半径の球で描き、近づくと球どうしがぶつかる様子を見せる
+    v.setStyle({}, { sphere: { scale: 1.0 } });
+    if (first) { v.zoomTo(); v.rotate(90, "x"); v.rotate(90, "z"); v.zoom(0.8); first = false; }
+    v.render();
+    document.getElementById("dimer-r").textContent = d.dists[k].toFixed(1) + " Å";
+    const dot = (c, color, label, dy) => `<circle cx="${x(d.dists[k])}" cy="${y(c[k])}" r="7" fill="${color}" stroke="#fbfaf7" stroke-width="3"/>
+      <text x="${x(d.dists[k]) + 12}" y="${y(c[k]) + dy}" font-size="13" font-weight="700" fill="${color}">${label} ${c[k] > 0 ? "+" : ""}${c[k].toFixed(2)} kcal/mol</text>`;
+    svg.innerHTML = base + dot(d.b3lyp, "#5f5e5a", "B3LYP", -10) + dot(d.wb97xv, POS, "ωB97X-V", 18);
+  }
+  onInput(slider, update);
+  slider.value = d.dists.length - 1; update();
+  slider.value = 2; update();
+})();
+</script>
+</body>
+</html>

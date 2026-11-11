@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第4章 構造最適化と振動</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=8">
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2/build/3Dmol-min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="common.js?v=5"></script>
+<script src="ch4_data.js?v=2"></script>
+</head>
+<body>
+
+<section>
+  <div class="kicker">第4章</div>
+  <h1>構造最適化と振動：エネルギーの谷底を探して、揺らす</h1>
+  <p class="lead">第1章で、原子核の位置ごとに電子のエネルギーが決まることを見ました。構造最適化は、このエネルギーが一番低い位置、つまり谷底を探す計算です。谷底で原子を少し動かすと、分子は振動します。</p>
+  <nav class="map" id="map"></nav>
+</section>
+
+<section>
+  <div class="kicker">1　構造最適化</div>
+  <h2>構造最適化は、エネルギーの地形を谷底へ下りていく計算</h2>
+  <div class="row even">
+    <div>
+      <div class="viewer" id="v-surf" style="height:420px"><span class="tag">水のエネルギーの地形</span></div>
+    </div>
+    <div>
+      <div class="viewer" id="v-step" style="height:300px"><span class="tag">その時点の構造</span><span class="big" id="step-angle"></span></div>
+      <p style="margin-top:16px">ゆがんだ構造から最適化を始めます。1歩ずつ進めてみましょう。</p>
+      <input type="range" id="s-step" min="0" max="1" step="1" value="0">
+      <div class="readout" id="step-text"></div>
+    </div>
+  </div>
+  <div class="card">計算機は、今いる点での地形の傾き、つまり各原子にかかる力を求め、坂を下る向きに原子を動かします。力がほぼ0になったら止まります。</div>
+  <div class="tradeoff">
+    <div><b aria-label="扱う"></b>出発した構造から坂を下って、一番近い谷底を見つける</div>
+    <div><b aria-label="扱わない"></b>山を越えた先にある別の谷は探さない</div>
+    <div><b aria-label="影響"></b>もっと安定な形を見落とすことがある。形をいくつも取れる分子では、出発構造を変えて何度か最適化する</div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">2　振動</div>
+  <h2>谷底で揺らすと、分子の振動が見える</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-vib"><span class="tag">水の振動</span><span class="big" id="vib-f"></span></div>
+    </div>
+    <div>
+      <p>水には3つの振動があります。選んでみましょう。</p>
+      <div class="seg" id="seg-vib"></div>
+      <div class="readout" id="vib-text"></div>
+    </div>
+  </div>
+  <div class="card">振動数は、谷底のまわりの曲がり具合から計算します。曲がりが急な方向ほど、振動数が高くなります。B3LYP の振動数は実験より少し高く出るので、0.96 前後を掛けてから実験の赤外スペクトルと比べるのが普通です。</div>
+</section>
+
+<section>
+  <div class="kicker">3　虚数の振動数</div>
+  <h2>振動数が虚数なら、そこは谷底ではない</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-lin"><span class="tag">まっすぐに伸ばした水</span><span class="big" id="lin-f"></span></div>
+    </div>
+    <div>
+      <p>H–O–H を 180° にした水の振動数を計算すると、変角の振動数が虚数になります。</p>
+      <p>この向きに動かすとエネルギーが下がるので、谷底ではなく峠にいることを表します。</p>
+    </div>
+  </div>
+  <div class="card">構造最適化のあとは、必ず振動数を計算し、虚数がないことを確かめます。虚数がちょうど1つある構造は、反応の遷移状態の候補になります。</div>
+</section>
+
+<section>
+  <div class="kicker">まとめ</div>
+  <h2>構造最適化と振動数の計算は、いつも組で行う</h2>
+  <div class="grid3">
+    <div class="stat"><div class="name">構造最適化</div><p>出発構造の近くの谷底を探す</p></div>
+    <div class="stat"><div class="name">振動数の計算</div><p>虚数がなければ谷底。赤外スペクトルとも比べられる</p></div>
+    <div class="stat"><div class="name">Gaussian では</div><p><code>opt freq</code> と1行に書く</p></div>
+  </div>
+</section>
+
+<nav class="pager">
+  <a class="prev" href="ch3_functional.html"><small>← 前の章</small>第3章 汎関数</a>
+  <a class="home" href="index.html">目次</a>
+  <a class="next" href="ch5_orbital.html"><small>次の章 →</small>第5章 分子軌道と光の吸収</a>
+</nav>
+<script>
+drawMap("map", "ch4_optimization.html");
+const D = window.CH4;
+
+// 水の座標を3Dmolに描く。vec を渡すと、振動の向きも付ける
+function molText(xyz, vec) {
+  const el = ["O", "H", "H"];
+  return `${xyz.length}\n\n` + xyz.map((p, i) => `${el[i]} ${p.join(" ")}` + (vec ? " " + vec[i].join(" ") : "")).join("\n");
+}
+function molView(id) {
+  const v = makeViewer(id);
+  v.setStyle({}, { stick: { radius: 0.13, color: "#9a9994" }, sphere: { scale: 0.28 } });
+  return v;
+}
+const STYLE = { stick: { radius: 0.13, color: "#d8d6cf" }, sphere: { scale: 0.28 } };
+
+// 場面1：エネルギーの地形と最適化の道のり
+(() => {
+  // エネルギーは、最適化が終わった構造を0にして表す
+  const S = D.surface, last = D.path[D.path.length - 1].kcal, slider = document.getElementById("s-step");
+  const P = D.path.map(p => ({ ...p, kcal: p.kcal - last }));
+  slider.max = P.length - 1;
+  const cap = 25, z = S.kcal.map(row => row.map(e => Math.min(e, cap)));
+  const surf = { type: "surface", x: S.r, y: S.theta, z, showscale: false, opacity: 0.9,
+    colorscale: [[0, "#dbe9fa"], [0.3, "#f1efe9"], [1, "#eb6834"]], hoverinfo: "skip",
+    contours: { z: { show: true, color: "#c9c6be", width: 1, start: 0, end: cap, size: 2.5 } } };
+  const pathTrace = { type: "scatter3d", mode: "lines+markers", x: P.map(p => p.r), y: P.map(p => p.theta), z: P.map(p => Math.min(p.kcal, cap) + 0.4),
+    line: { color: "#17171a", width: 5 }, marker: { size: 3, color: "#17171a" }, hoverinfo: "skip" };
+  const here = k => ({ type: "scatter3d", mode: "markers", x: [P[k].r], y: [P[k].theta], z: [Math.min(P[k].kcal, cap) + 0.6],
+    marker: { size: 8, color: NEG }, hoverinfo: "skip" });
+  const ax = t => ({ title: { text: t, font: { size: 12 } }, tickfont: { size: 10 }, backgroundcolor: "rgba(0,0,0,0)" });
+  const layout = { margin: { l: 0, r: 0, t: 0, b: 0 }, showlegend: false, paper_bgcolor: "rgba(0,0,0,0)",
+    font: { family: "Noto Sans JP, sans-serif", color: "#5f5e5a" },
+    scene: { xaxis: ax("O–H / Å"), yaxis: ax("角度 / °"), zaxis: { ...ax("kcal/mol"), range: [0, cap + 1] },
+             camera: { eye: { x: 1.6, y: -1.4, z: 0.9 } }, aspectratio: { x: 1, y: 1, z: 0.6 } } };
+  Plotly.newPlot("v-surf", [surf, pathTrace, here(0)], layout, { displayModeBar: false, responsive: true });
+
+  const v = makeViewer("v-step");
+  let first = true;
+  function update() {
+    const k = +slider.value, p = P[k];
+    v.removeAllModels(); v.addModel(molText(p.xyz), "xyz"); v.setStyle({}, STYLE);
+    if (first) { v.zoomTo(); WATER_VIEW(v); v.zoom(2); first = false; }
+    v.render();
+    Plotly.restyle("v-surf", { x: [[p.r]], y: [[p.theta]], z: [[Math.min(p.kcal, cap) + 0.6]] }, [2]);
+    document.getElementById("step-angle").textContent = p.theta.toFixed(1) + "°";
+    document.getElementById("step-text").innerHTML = `${k === P.length - 1 ? "谷底に着いた" : `${k + 1} 歩目`}。O–H ${p.r.toFixed(3)} Å<b>+${p.kcal.toFixed(1)} kcal/mol</b>`;
+  }
+  onInput(slider, update);
+  update();
+})();
+
+// 場面2と3：振動のアニメーション
+function vibViewer(id, data, k) {
+  const v = makeViewer(id);
+  v.addModel(molText(data.xyz, data.modes[k]), "xyz");
+  v.setStyle({}, STYLE);
+  v.zoomTo(); WATER_VIEW(v); v.zoom(2);
+  v.vibrate(16, 1.0, true);
+  v.animate({ loop: "backAndForth", interval: 40 });
+  v.render();
+  return v;
+}
+const wn = f => f < 0 ? `${(-f).toFixed(0)}i cm⁻¹` : `${f.toFixed(0)} cm⁻¹`;
+
+(() => {
+  const d = D.vib, seg = document.getElementById("seg-vib");
+  // 振動数の低い順に、変角、対称伸縮、逆対称伸縮
+  const names = ["変角", "対称伸縮", "逆対称伸縮"], exp = [1595, 3657, 3756];
+  let v = null;
+  function show(k) {
+    if (v) { v.stopAnimate(); v.clear(); }
+    document.getElementById("v-vib").querySelector("canvas")?.remove();
+    v = vibViewer("v-vib", d, k);
+    document.getElementById("vib-f").textContent = wn(d.freq[k]);
+    document.getElementById("vib-text").innerHTML = `実験 ${exp[k]} cm⁻¹<b>計算 × 0.96 = ${(d.freq[k] * 0.96).toFixed(0)} cm⁻¹</b>`;
+    seg.querySelectorAll("button").forEach((b, i) => b.classList.toggle("on", i === k));
+  }
+  seg.innerHTML = names.map(n => `<button>${n}</button>`).join("");
+  seg.querySelectorAll("button").forEach((b, i) => b.onclick = () => show(i));
+  show(0);
+})();
+
+(() => {
+  const d = D.linear, k = d.freq.indexOf(Math.min(...d.freq));
+  vibViewer("v-lin", d, k);
+  document.getElementById("lin-f").textContent = wn(d.freq[k]);
+})();
+</script>
+</body>
+</html>

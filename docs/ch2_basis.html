@@ -1,0 +1,253 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第2章 基底関数</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2/build/3Dmol-min.js"></script>
+<script src="https://cdn.plot.ly/plotly-2.35.2.min.js"></script>
+<script src="common.js?v=5"></script>
+<script src="ch2_data.js?v=2"></script>
+<link rel="stylesheet" href="style.css?v=8">
+</head>
+<body>
+
+<section>
+  <div class="kicker">第2章</div>
+  <h1>基底関数：分子軌道を原子軌道の重ね合わせで表す</h1>
+  <p class="lead">計算機は分子軌道を、原子軌道の形をした関数の重ね合わせで表します。この関数の組が基底関数です。<br><code>basis = "def2-svp"</code> は、どの基底関数を使うかの指定です。</p>
+  <nav class="map" id="map"></nav>
+</section>
+
+<section>
+  <div class="kicker">1　LCAO</div>
+  <h2>同位相で足すと結合性軌道、逆位相で足すと反結合性軌道になる</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-h2"><span class="tag">H₂ の分子軌道</span></div>
+    </div>
+    <div>
+      <p>2つの水素の1s軌道の係数を変えてみましょう。</p>
+      <div class="eq">φ = <span class="c" id="ca"></span> χ<sub>A</sub> <span class="c" id="cb"></span> χ<sub>B</sub></div>
+      <input type="range" id="s-h2" min="-90" max="90" step="5" value="45">
+      <div class="slider-labels"><span>逆位相</span><span>Aだけ</span><span>同位相</span></div>
+      <svg id="mo-diagram" viewBox="0 0 420 260" width="100%"></svg>
+    </div>
+  </div>
+  <div class="card">計算機は、エネルギーが最も低くなる係数を探します。これがSCF計算です。</div>
+  <div class="tradeoff">
+    <div><b aria-label="扱う"></b>原子軌道を足し合わせてできる形なら、分子軌道として表せる</div>
+    <div><b aria-label="扱わない"></b>用意した関数をどう足しても作れない形は、表せない</div>
+    <div><b aria-label="影響"></b>関数が足りないと、エネルギーが本当より高めに出る</div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">2　ガウス関数</div>
+  <h2>尖った1s軌道を、頂上の丸いガウス関数の和で近似する</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-gauss" style="height:420px"><span class="tag">水素の1s軌道を、平面上の値を高さにして描いたもの</span></div>
+    </div>
+    <div>
+      <p>灰色が本物の1s軌道、青がガウス関数の和です。足すガウス関数の数を増やしてみましょう。</p>
+      <input type="range" id="s-gauss" min="1" max="6" step="1" value="1">
+      <div class="slider-labels"><span>1個</span><span>6個</span></div>
+      <div class="card" style="font-size:18px">ガウス関数 <span id="g-n"></span> 個、本物との一致度 <span id="g-ov" style="font-size:26px;font-weight:700"></span></div>
+    </div>
+  </div>
+  <div class="card">左の図で、本物の山は原子核の真上で鋭く尖っています。この尖りだけは、ガウス関数を何個足しても再現できません。それでもガウス関数を使うのは、積分がとても速く計算できるからです。</div>
+  <div class="tradeoff">
+    <div><b aria-label="扱う"></b>原子核から少し離れた所の、軌道の大まかな形は再現できる</div>
+    <div><b aria-label="扱わない"></b>原子核の真上で軌道が鋭く尖る形は、ガウス関数を何個足しても再現できない</div>
+    <div><b aria-label="影響"></b>結合や反応に関わるのは原子核から離れた所の電子なので、反応のエネルギーはほとんど変わらない</div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">3　名前を読む：def2-SV<span style="color:var(--neg)">P</span> の SV</div>
+  <h2>原子価軌道を2つの関数に分けて、大きさを調節する</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-cp"><span class="tag">炭素の2p軌道</span><span class="big" id="cp-r"></span></div>
+    </div>
+    <div>
+      <p>縮んだ関数と広がった関数の配合を変えてみましょう。</p>
+      <input type="range" id="s-cp" min="0" max="100" step="5" value="40">
+      <div class="slider-labels"><span>縮んだ関数だけ</span><span>広がった関数だけ</span></div>
+      <div class="mix" id="mix-cp"></div>
+    </div>
+  </div>
+  <div class="card">カチオンでは軌道が縮み、アニオンでは広がります。原子価軌道を2つの関数に分けておけば、その配合でどちらも表せます。SV は split valence の略です。</div>
+  <div class="tradeoff">
+    <div><b aria-label="扱う"></b>結合に使う外側の軌道は、分子に合わせて膨らんだり縮んだりできる</div>
+    <div><b aria-label="扱わない"></b>原子核に近い内殻の軌道は、関数が1つだけなので大きさを変えられない</div>
+    <div><b aria-label="影響"></b>内殻の電子を調べる X線分光のような計算は苦手</div>
+  </div>
+  <p class="hint">陰イオンには、さらに遠くまで広がった関数である分散関数を足した def2-SVPD を使います。D は diffuse の略です。</p>
+</section>
+
+<section>
+  <div class="kicker">4　名前を読む：def2-SV<span style="color:var(--neg)">P</span> の P</div>
+  <h2>分極関数がないと、水の結合角がずれる</h2>
+  <div class="viewer" style="height:auto"><svg id="angles" viewBox="0 0 720 480" width="100%"></svg></div>
+  <div class="card">結合の電子は隣の原子に引っ張られて、軌道が少し偏ります。sとpの関数だけではこの偏りを表せないので、酸素にはd関数、水素にはp関数を足します。これが分極関数で、P は polarization の略です。</div>
+</section>
+
+<section>
+  <div class="kicker">5　基底関数を増やすと</div>
+  <h2>基底関数を増やすと正確になるが、時間は急に増える</h2>
+  <p class="hint">エチレンで比較。原子価軌道1つあたりの関数は SVP が2つ、TZVP が3つ、QZVP が4つ。</p>
+  <div class="grid3" id="ladder"></div>
+  <div class="bars" id="time-bars" style="margin-top:24px"></div>
+  <div class="card">基底関数の数が2倍になると、時間はおよそ16倍になります。ただ、2つの分子を同じ基底関数で計算すると誤差もほぼ同じだけ入るので、エネルギーの差をとると誤差はほぼ打ち消し合います。</div>
+</section>
+
+<section>
+  <div class="kicker">まとめ</div>
+  <h2>迷ったら、こう選ぶ</h2>
+  <div class="grid3">
+    <div class="stat"><div class="name">構造最適化</div><p>def2-SVP</p></div>
+    <div class="stat"><div class="name">エネルギーの比較</div><p>SVP の構造で、def2-TZVP で計算し直す</p></div>
+    <div class="stat"><div class="name">陰イオン</div><p>def2-SVPD、def2-TZVPD</p></div>
+  </div>
+  <p style="margin-top:24px">論文の <code>B3LYP/def2-TZVP//B3LYP/def2-SVP</code> は、<code>//</code> の右で構造最適化、左でエネルギー計算という意味です。6-31G(d) は def2-SVP とほぼ同じ大きさです。</p>
+</section>
+
+<nav class="pager">
+  <a class="prev" href="ch1_intro.html"><small>← 前の章</small>第1章 量子化学計算</a>
+  <a class="home" href="index.html">目次</a>
+  <a class="next" href="ch3_functional.html"><small>次の章 →</small>第3章 汎関数</a>
+</nav>
+<script>
+drawMap("map", "ch2_basis.html");
+const D = window.CH2;
+// 場面1：H2
+(() => {
+  const d = D.h2, [chiA, chiB] = d.grids.map(decode), F = d.F, S = d.S;
+  const v = makeViewer("v-h2");
+  const energy = (a, b) => (a * a * F[0][0] + 2 * a * b * F[0][1] + b * b * F[1][1]) /
+                           (a * a * S[0][0] + 2 * a * b * S[0][1] + b * b * S[1][1]);
+  const eAtom = energy(1, 0), eBond = energy(1, 1), eAnti = energy(1, -1);
+  const y = e => 30 + (eAnti - e) / (eAnti - eBond) * 200;
+  const svg = document.getElementById("mo-diagram");
+  const line = (x1, x2, e, color, w, dash = "") =>
+    `<line x1="${x1}" x2="${x2}" y1="${y(e)}" y2="${y(e)}" stroke="${color}" stroke-width="${w}" stroke-dasharray="${dash}"/>`;
+  const line2 = (x1, e1, x2, e2) => `<line x1="${x1}" x2="${x2}" y1="${y(e1)}" y2="${y(e2)}" stroke="#d6d5d0" stroke-width="1" stroke-dasharray="3 3"/>`;
+  const text = (x, e, s, anchor = "start", color = "#52514e") =>
+    `<text x="${x}" y="${y(e) + 5}" font-size="14" fill="${color}" text-anchor="${anchor}">${s}</text>`;
+  const base = line(20, 90, eAtom, "#0b0b0b", 3) + line(330, 400, eAtom, "#0b0b0b", 3) +
+    text(55, eAtom - 2.2, "Hの1s", "middle") + text(365, eAtom - 2.2, "Hの1s", "middle") +
+    line2(90, eAtom, 160, eBond) + line2(90, eAtom, 160, eAnti) + line2(330, eAtom, 260, eBond) + line2(330, eAtom, 260, eAnti) +
+    line(160, 260, eBond, "#c3c2bc", 2, "5 4") + line(160, 260, eAnti, "#c3c2bc", 2, "5 4") +
+    text(270, eBond, "結合性軌道") + text(270, eAnti, "反結合性軌道") +
+    `<text x="0" y="16" font-size="13" fill="#52514e">エネルギー ↑</text>`;
+  let first = true, pending = false;
+  function update() {
+    pending = false;
+    const t = +document.getElementById("s-h2").value * Math.PI / 180;
+    const n = Math.sqrt(Math.cos(t) ** 2 * S[0][0] + 2 * Math.cos(t) * Math.sin(t) * S[0][1] + Math.sin(t) ** 2 * S[1][1]);
+    const a = Math.cos(t) / n, b = Math.sin(t) / n, e = energy(a, b);
+    document.getElementById("ca").textContent = a.toFixed(2);
+    document.getElementById("cb").textContent = (b >= 0 ? "+ " : "− ") + Math.abs(b).toFixed(2);
+    const vals = chiA.map((x, i) => a * x + b * chiB[i]);
+    drawOrbital(v, d, vals, 0.09, first, { rotate: [90, "y"], zoom: 2.2 });
+    first = false;
+    svg.innerHTML = base + line(160, 260, e, NEG, 5) + `<text x="210" y="${y(e) - 10}" font-size="15" font-weight="700" fill="${NEG}" text-anchor="middle">${e.toFixed(1)} eV</text>`;
+  }
+  document.getElementById("s-h2").addEventListener("input", () => {
+    if (!pending) { pending = true; requestAnimationFrame(update); }
+  });
+  update();
+})();
+
+// 場面2：スレーター関数とガウス関数の和
+(() => {
+  const BOHR = 0.529177, xs = [];
+  for (let i = 0; i <= 60; i++) xs.push(-1.6 + 3.2 * i / 60);
+  const surf = f => xs.map(y => xs.map(x => f(Math.hypot(x, y) / BOHR)));
+  const slater = surf(r => Math.exp(-r) / Math.sqrt(Math.PI));
+  const gsum = g => surf(r => g.alpha.reduce((s, a, k) => s + g.coef[k] * Math.exp(-a * r * r), 0));
+  const el = document.getElementById("v-gauss");
+  const layout = {
+    margin: { l: 0, r: 0, t: 30, b: 0 }, showlegend: true, legend: { x: 0.02, y: 0.9, bgcolor: "rgba(0,0,0,0)" },
+    paper_bgcolor: "rgba(0,0,0,0)", font: { family: "Noto Sans JP, Hiragino Sans, sans-serif", color: "#5f5e5a" },
+    scene: { xaxis: { visible: false }, yaxis: { visible: false }, zaxis: { visible: false, range: [0, 0.6] },
+             camera: { eye: { x: 1.5, y: 1.3, z: 0.55 } }, aspectratio: { x: 1, y: 1, z: 0.8 } } };
+  const traces = n => [
+    { type: "surface", x: xs, y: xs, z: slater, name: "本物", showlegend: true, showscale: false, opacity: 0.35,
+      colorscale: [[0, "#c3c2bc"], [1, "#52514e"]], hoverinfo: "skip" },
+    { type: "surface", x: xs, y: xs, z: gsum(D.gauss[n - 1]), name: "ガウス関数の和", showlegend: true, showscale: false,
+      colorscale: [[0, "#dbe9fa"], [1, NEG]], hoverinfo: "skip" }];
+  Plotly.newPlot(el, traces(1), layout, { displayModeBar: false, responsive: true });
+  function update() {
+    const n = +document.getElementById("s-gauss").value;
+    document.getElementById("g-n").textContent = n;
+    document.getElementById("g-ov").textContent = (D.gauss[n - 1].overlap * 100).toFixed(2) + " %";
+    Plotly.restyle(el, { z: [gsum(D.gauss[n - 1])] }, [1]);
+  }
+  document.getElementById("s-gauss").addEventListener("input", update);
+  update();
+})();
+
+// 場面3：炭素2pの縮んだ関数と広がった関数の配合
+(() => {
+  const d = D.carbon_p, [inner, outer] = d.grids.map(decode), S = d.S, R = d.R;
+  const v = makeViewer("v-cp");
+  const quad = (M, a, b) => a * a * M[0][0] + 2 * a * b * M[0][1] + b * b * M[1][1];
+  let first = true, pending = false;
+  function update() {
+    pending = false;
+    const w = +document.getElementById("s-cp").value / 100;
+    const n = Math.sqrt(quad(S, 1 - w, w)), a = (1 - w) / n, b = w / n;
+    drawOrbital(v, d, inner.map((x, i) => a * x + b * outer[i]), 0.05, first, { rotate: [90, "x"], zoom: 0.9 });
+    first = false;
+    document.getElementById("cp-r").textContent = (quad(R, a, b)).toFixed(2) + " Å";
+    document.getElementById("mix-cp").innerHTML =
+      `<div style="width:${(1 - w) * 100}%;background:${NEG}">${w < 0.85 ? "縮んだ関数 " + Math.round((1 - w) * 100) + "%" : ""}</div>` +
+      `<div style="width:${w * 100}%;background:${POS}">${w > 0.15 ? "広がった関数 " + Math.round(w * 100) + "%" : ""}</div>`;
+  }
+  document.getElementById("s-cp").addEventListener("input", () => {
+    if (!pending) { pending = true; requestAnimationFrame(update); }
+  });
+  update();
+})();
+
+// 場面4：分極関数の有無。右の O–H を重ね、もう一方の O–H を長く延ばして、角度の差を線の先の開きで見せる
+(() => {
+  const O = [200, 440], L = 150, R = 420, svg = document.getElementById("angles");
+  const tip = (deg, len) => [O[0] + len * Math.cos(deg * Math.PI / 180), O[1] - len * Math.sin(deg * Math.PI / 180)];
+  const nopol = D.water.nopol.angle, pol = D.water.pol.angle;
+  const rays = [[nopol, "#9a9994", "", `分極関数なし (def2-SV) ${nopol.toFixed(1)}°`], [104.5, "#17171a", "7 6", "実験 104.5°"], [pol, POS, "", `def2-SVP ${pol.toFixed(1)}°`]];
+  const ray = ([deg, color, dash]) => {
+    const [x1, y1] = tip(deg, L), [x2, y2] = tip(deg, R);
+    return (dash ? "" : `<line x1="${O[0]}" y1="${O[1]}" x2="${x1}" y2="${y1}" stroke="${color}" stroke-width="10" stroke-linecap="round" opacity="0.85"/>`) +
+      `<line x1="${O[0]}" y1="${O[1]}" x2="${x2}" y2="${y2}" stroke="${color}" stroke-width="3" stroke-dasharray="${dash}"/>` +
+      (dash ? "" : `<circle cx="${x1}" cy="${y1}" r="17" fill="#fff" stroke="${color}" stroke-width="3"/>`);
+  };
+  const legend = rays.map(([, color, dash, label], i) => `<line x1="330" x2="380" y1="${70 + i * 40}" y2="${70 + i * 40}" stroke="${color}" stroke-width="4" stroke-dasharray="${dash}"/>
+    <text x="392" y="${76 + i * 40}" font-size="18" font-weight="700" fill="${color === "#9a9994" ? "#5f5e5a" : color}">${label}</text>`).join("");
+  svg.innerHTML =
+    `<line x1="${O[0]}" y1="${O[1]}" x2="${O[0] + L}" y2="${O[1]}" stroke="#17171a" stroke-width="10" stroke-linecap="round"/>
+     <circle cx="${O[0] + L}" cy="${O[1]}" r="17" fill="#fff" stroke="#17171a" stroke-width="3"/>` +
+    rays.map(ray).join("") + legend +
+    `<circle cx="${O[0]}" cy="${O[1]}" r="26" fill="#e2483d"/><text x="${O[0]}" y="${O[1] + 7}" font-size="18" font-weight="700" fill="#fff" text-anchor="middle">O</text>`;
+})();
+
+// 場面5：基底関数の数と計算時間
+(() => {
+  const L = D.ladder, best = L[L.length - 1].energy, tmax = Math.max(...L.map(r => r.seconds));
+  document.getElementById("ladder").innerHTML = L.map(r => `<div class="stat">
+      <div class="name">${r.basis}</div>
+      <div><span class="num">${r.nao}</span> <span class="unit">個の基底関数</span></div>
+      <div>${r.energy === best ? `<span class="unit">この値を基準にする</span>` : `<span class="unit">QZVP より</span> <span class="num">${((r.energy - best) * 627.51).toFixed(1)}</span> <span class="unit">kcal/mol 高い</span>`}</div>
+    </div>`).join("");
+  document.getElementById("time-bars").innerHTML = `<div class="hint">計算時間</div>` + L.map(r => `<div class="bar">
+      <span>${r.basis}</span><div class="track"><div class="fill" style="width:${Math.max(r.seconds / tmax * 100, 0.8)}%"></div></div>
+      <span>${r.seconds.toFixed(1)} 秒</span></div>`).join("");
+})();
+</script>
+</body>
+</html>

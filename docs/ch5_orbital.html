@@ -1,0 +1,125 @@
+<!doctype html>
+<html lang="ja">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第5章 分子軌道と光の吸収</title>
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css?v=8">
+<script src="https://cdn.jsdelivr.net/npm/3dmol@2/build/3Dmol-min.js"></script>
+<script src="common.js?v=5"></script>
+<script src="ch5_data.js?v=2"></script>
+<style>
+  .spectrum { position: relative; height: 56px; border-radius: 10px; margin-top: 28px;
+    background: linear-gradient(90deg, #d9d6ce 0%, #d9d6ce 41.8%, #7b2fbe 41.8%, #2a5bd6 48%, #19a3c8 54%, #3cb44b 60%, #f2d22e 68%, #f08a24 76%, #d62f2f 88%, #8c1a1a 100%); }
+  .spectrum .tick { position: absolute; top: -8px; bottom: -8px; width: 3px; margin-left: -1.5px; background: var(--ink); }
+  .spectrum .tick.dim { background: rgba(23, 23, 26, .25); }
+  .spectrum .tick span { position: absolute; top: -24px; left: 50%; transform: translateX(-50%); font-size: 13px; font-weight: 700; white-space: nowrap; }
+  .spec-axis { position: relative; height: 22px; font-size: 13px; color: var(--ink2); margin-top: 6px; }
+  .spec-axis span { position: absolute; transform: translateX(-50%); white-space: nowrap; }
+</style>
+</head>
+<body>
+
+<section>
+  <div class="kicker">第5章</div>
+  <h1>分子軌道と光の吸収：共役が伸びると、色がつく</h1>
+  <p class="lead">分子が光を吸収すると、電子が HOMO から LUMO へ移ります。HOMO と LUMO のエネルギーの差が小さい分子ほど、波長の長い光を吸収します。</p>
+  <nav class="map" id="map"></nav>
+</section>
+
+<section>
+  <div class="kicker">1　共役の長さ</div>
+  <h2>二重結合をつなげるほど、HOMO と LUMO が近づく</h2>
+  <div class="row">
+    <div>
+      <div class="viewer" id="v-poly"><span class="tag" id="poly-name"></span></div>
+    </div>
+    <div>
+      <p>二重結合の数を変えてみましょう。</p>
+      <input type="range" id="s-poly" min="0" max="5" step="1" value="0">
+      <div class="slider-labels"><span>1個</span><span>6個</span></div>
+      <div class="seg" id="seg-mo"><button class="on">HOMO</button><button>LUMO</button></div>
+      <svg id="gap" viewBox="0 0 360 230" width="100%"></svg>
+    </div>
+  </div>
+  <div class="card">HOMO も LUMO も、炭素の p 軌道がつながってできた π 軌道です。鎖が長くなると軌道が広がり、HOMO は上がり、LUMO は下がります。</div>
+</section>
+
+<section>
+  <div class="kicker">2　吸収する光</div>
+  <h2>差が小さくなると、吸収する光が紫外から可視光へ移る</h2>
+  <p>励起エネルギーを TDDFT という方法で計算し、吸収する光の波長に直しました。黒い線が今の分子、薄い線がほかの長さの分子です。</p>
+  <div class="spectrum" id="spectrum"></div>
+  <div class="spec-axis" id="spec-axis"></div>
+  <div class="grid3" style="margin-top:36px" id="spec-stats"></div>
+  <div class="card">二重結合が 11 個つながった β-カロテンは、青い光を吸収するので、残りの光が橙色に見えます。ニンジンの色はこのためです。</div>
+  <div class="tradeoff">
+    <div><b aria-label="扱う"></b>電子1個が、HOMO などの軌道から別の軌道へ移る変化を計算する</div>
+    <div><b aria-label="扱わない"></b>周りの溶媒の影響と、分子の振動で吸収の幅が広がる効果は入れない</div>
+    <div><b aria-label="影響"></b>吸収波長が、実験と数十 nm ずれることがある</div>
+  </div>
+</section>
+
+<section>
+  <div class="kicker">まとめ</div>
+  <h2>近似を重ねて、分子の色まで計算できた</h2>
+  <p>原子核を止め、電子を1個ずつ扱い、電子相関を汎関数で補い、軌道を基底関数で表しました。それぞれの近似で何を捨てたかを知っていれば、計算結果をどこまで信じてよいかを判断できます。</p>
+</section>
+
+<nav class="pager">
+  <a class="prev" href="ch4_optimization.html"><small>← 前の章</small>第4章 構造最適化と振動</a>
+  <a class="home" href="index.html">目次</a>
+  <span></span>
+</nav>
+<script>
+drawMap("map", "ch5_orbital.html");
+const C = window.CH5.chains, shown = C.filter(c => c.grids);
+const NAMES = { 1: "エチレン", 2: "ブタジエン", 3: "ヘキサトリエン", 4: "オクタテトラエン" };
+const nameOf = n => NAMES[n] || `二重結合 ${n} 個のポリエン`;
+let k = 0, mo = 0;
+
+// 場面1：HOMO と LUMO の形と準位
+const v = makeViewer("v-poly"), svg = document.getElementById("gap"), slider = document.getElementById("s-poly");
+slider.max = shown.length - 1;
+const all = shown.flatMap(c => [c.homo, c.lumo]), eTop = Math.max(...all) + 0.5, eBot = Math.min(...all) - 0.5;
+const y = e => 20 + (eTop - e) / (eTop - eBot) * 190;
+function drawGap(c) {
+  const lv = (e, label, on) => `<line x1="60" x2="200" y1="${y(e)}" y2="${y(e)}" stroke="${on ? NEG : "#17171a"}" stroke-width="${on ? 5 : 3}"/>
+    <text x="210" y="${y(e) + 5}" font-size="13" fill="#5f5e5a">${label} ${e.toFixed(1)} eV</text>`;
+  svg.innerHTML = `<text x="0" y="14" font-size="13" fill="#5f5e5a">エネルギー ↑</text>` +
+    lv(c.lumo, "LUMO", mo === 1) + lv(c.homo, "HOMO", mo === 0) +
+    `<line x1="130" x2="130" y1="${y(c.lumo) + 6}" y2="${y(c.homo) - 6}" stroke="${POS}" stroke-width="2"/>
+     <text x="138" y="${(y(c.lumo) + y(c.homo)) / 2 + 5}" font-size="15" font-weight="700" fill="${POS}">差 ${(c.lumo - c.homo).toFixed(1)} eV</text>`;
+}
+function update() {
+  const c = shown[+slider.value];
+  // 鎖の長さで箱が変わるので、毎回視点を合わせ直す
+  drawOrbital(v, c, decode(c.grids[mo]), 0.03, true, { view: v => v.rotate(-55, "x"), zoom: 1.0 });
+  document.getElementById("poly-name").textContent = nameOf(c.bonds);
+  drawGap(c);
+  drawSpectrum(c.bonds);
+}
+onInput(slider, update);
+document.querySelectorAll("#seg-mo button").forEach((b, i) => b.onclick = () => {
+  mo = i; document.querySelectorAll("#seg-mo button").forEach((x, j) => x.classList.toggle("on", j === i)); update();
+});
+
+// 場面2：吸収波長を、紫外から可視光までの帯の上に置く
+const lo = 150, hi = 700, pos = nm => (nm - lo) / (hi - lo) * 100;
+document.getElementById("spec-axis").innerHTML = [150, 200, 300, 380, 500, 600, 700]
+  .map(nm => `<span style="left:${pos(nm)}%">${nm === 380 ? "380 nm 可視光 →" : nm}</span>`).join("");
+function drawSpectrum(n) {
+  document.getElementById("spectrum").innerHTML = C.map(c =>
+    `<div class="tick ${c.bonds === n ? "" : "dim"}" style="left:${pos(Math.min(c.nm, hi))}%">${c.bonds === n ? `<span>${c.nm.toFixed(0)} nm</span>` : ""}</div>`).join("");
+  const c = C.find(c => c.bonds === n), EXP = { 2: 217, 3: 258, 4: 290 };
+  document.getElementById("spec-stats").innerHTML = `
+    <div class="stat"><div class="name">${nameOf(n)}</div><span class="num">${c.nm.toFixed(0)}</span> <span class="unit">nm で吸収</span></div>
+    <div class="stat"><div class="name">励起エネルギー</div><span class="num">${c.excite.toFixed(2)}</span> <span class="unit">eV</span></div>
+    <div class="stat"><div class="name">実験値</div>${EXP[n] ? `<span class="num">${EXP[n]}</span> <span class="unit">nm</span>` : `<p>このページでは扱わない</p>`}</div>`;
+}
+update();
+</script>
+</body>
+</html>

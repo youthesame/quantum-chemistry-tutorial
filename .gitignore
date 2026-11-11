@@ -1,0 +1,9 @@
+# 公開しないもの
+check/
+data/
+shots/
+.claude/
+.venv/
+__pycache__/
+*.cube
+.DS_Store
